@@ -29,6 +29,22 @@ public class ExamenGeneratorGUI extends JFrame {
         
         // Configurar la ventana
         setTitle("Generador de Exámenes de Admisión");
+        try {
+            URL iconUrl = getClass().getClassLoader().getResource("images/logo.png");
+            if (iconUrl != null) {
+                setIconImage(new ImageIcon(iconUrl).getImage());
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "No se pudo cargar el ícono de la aplicación",
+                    "Advertencia",
+                    JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                "Error al cargar el ícono: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
         setSize(1280, 720);
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -70,7 +86,7 @@ public class ExamenGeneratorGUI extends JFrame {
             e.printStackTrace();
         }
         
-        // Generador title
+        // Generador titulo
         JLabel generadorLabel = new JLabel("GENERADOR DE TEMAS");
         generadorLabel.setFont(new Font("Arial", Font.BOLD, 36));
         generadorLabel.setForeground(Color.RED);
@@ -105,6 +121,7 @@ public class ExamenGeneratorGUI extends JFrame {
         verExamenesButton.setForeground(Color.WHITE);
         verExamenesButton.setMaximumSize(new Dimension(300, 40));
         verExamenesButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        verExamenesButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
         generarButton = new JButton("GENERAR EXÁMENES");
         generarButton.setBackground(Color.RED);
@@ -114,6 +131,7 @@ public class ExamenGeneratorGUI extends JFrame {
         generarButton.setForeground(Color.WHITE);
         generarButton.setMaximumSize(new Dimension(300, 40));
         generarButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        generarButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
         // Footer
         JLabel footerLabel = new JLabel("DESARROLLADO POR: III CICLO \"A\" 2024-I");

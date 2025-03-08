@@ -34,7 +34,7 @@ public class ExamenGenerator {
     public String[] generarExamenes(int cantidadTemas) {
         String[] rutasArchivos = new String[cantidadTemas];
         
-        // Create Exámenes directory if it doesn't exist
+        // Crea la carpeta Exámenes si no existe
 java.io.File examDirectory = new java.io.File("Exámenes");
         if (!examDirectory.exists()) {
             examDirectory.mkdir();
