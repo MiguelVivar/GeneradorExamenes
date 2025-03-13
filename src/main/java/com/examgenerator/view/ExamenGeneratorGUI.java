@@ -53,8 +53,8 @@ public class ExamenGeneratorGUI extends JFrame {
         // Inicializar componentes
         initComponents();
         
-        // Mostrar la ventana
-        setVisible(true);
+        // Ya no mostramos la ventana aquí, se mostrará después de cerrar el splash screen
+        // setVisible(true);
     }
     
     private void initComponents() {
@@ -113,25 +113,46 @@ public class ExamenGeneratorGUI extends JFrame {
         cantidadTemasSpinner.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // Botones
-        verExamenesButton = new JButton("VER EXÁMENES");
-        verExamenesButton.setBackground(new Color(255, 102, 0));
-        verExamenesButton.setOpaque(true);
-        verExamenesButton.setBorderPainted(false);
-        verExamenesButton.setFont(new Font("Arial", Font.BOLD, 24));
+        verExamenesButton = new JButton("VER EXÁMENES") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(255, 102, 0));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         verExamenesButton.setForeground(Color.WHITE);
+        verExamenesButton.setFont(new Font("Arial", Font.BOLD, 24));
         verExamenesButton.setMaximumSize(new Dimension(300, 40));
         verExamenesButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         verExamenesButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        generarButton = new JButton("GENERAR EXÁMENES");
-        generarButton.setBackground(Color.RED);
-        generarButton.setFont(new Font("Arial", Font.BOLD, 24));
-        generarButton.setOpaque(true);
-        generarButton.setBorderPainted(false);
+        verExamenesButton.setContentAreaFilled(false);
+        verExamenesButton.setBorderPainted(false);
+        verExamenesButton.setFocusPainted(false);
+
+        generarButton = new JButton("GENERAR EXÁMENES") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.RED);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         generarButton.setForeground(Color.WHITE);
+        generarButton.setFont(new Font("Arial", Font.BOLD, 24));
         generarButton.setMaximumSize(new Dimension(300, 40));
         generarButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         generarButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        generarButton.setContentAreaFilled(false);
+        generarButton.setBorderPainted(false);
+        generarButton.setFocusPainted(false);
+        generarButton.putClientProperty("JButton.buttonType", "square");
         
         // Footer
         JLabel footerLabel = new JLabel("DESARROLLADO POR: III CICLO \"A\" 2024-I");
@@ -274,10 +295,20 @@ public class ExamenGeneratorGUI extends JFrame {
             e.printStackTrace();
         }
         
+        // Mostrar pantalla de carga
+        final SplashScreen splash = new SplashScreen(3000);
+        splash.showSplash();
+        
+        // Iniciar la aplicación en segundo plano
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new ExamenGeneratorGUI();
+                // Crear la ventana principal
+                ExamenGeneratorGUI mainWindow = new ExamenGeneratorGUI();
+                
+                // Cerrar la pantalla de carga y mostrar la ventana principal
+                splash.closeSplash();
+                mainWindow.setVisible(true);
             }
         });
     }
