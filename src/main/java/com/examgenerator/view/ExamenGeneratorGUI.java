@@ -126,8 +126,8 @@ public class ExamenGeneratorGUI extends JFrame {
             }
         };
         verExamenesButton.setForeground(Color.WHITE);
-        verExamenesButton.setFont(new Font("Arial", Font.BOLD, 24));
-        verExamenesButton.setMaximumSize(new Dimension(300, 40));
+        verExamenesButton.setFont(new Font("Arial", Font.BOLD, 22));
+        verExamenesButton.setMaximumSize(new Dimension(400, 45));
         verExamenesButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         verExamenesButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         verExamenesButton.setContentAreaFilled(false);
@@ -146,8 +146,8 @@ public class ExamenGeneratorGUI extends JFrame {
             }
         };
         generarPDFButton.setForeground(Color.WHITE);
-        generarPDFButton.setFont(new Font("Arial", Font.BOLD, 24));
-        generarPDFButton.setMaximumSize(new Dimension(300, 40));
+        generarPDFButton.setFont(new Font("Arial", Font.BOLD, 22));
+        generarPDFButton.setMaximumSize(new Dimension(400, 45));
         generarPDFButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         generarPDFButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         generarPDFButton.setContentAreaFilled(false);
@@ -167,8 +167,8 @@ public class ExamenGeneratorGUI extends JFrame {
             }
         };
         generarWordButton.setForeground(Color.WHITE);
-        generarWordButton.setFont(new Font("Arial", Font.BOLD, 24));
-        generarWordButton.setMaximumSize(new Dimension(300, 40));
+        generarWordButton.setFont(new Font("Arial", Font.BOLD, 22));
+        generarWordButton.setMaximumSize(new Dimension(400, 45));
         generarWordButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         generarWordButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         generarWordButton.setContentAreaFilled(false);
