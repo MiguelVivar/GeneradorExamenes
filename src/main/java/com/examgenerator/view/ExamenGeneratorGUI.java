@@ -17,7 +17,8 @@ public class ExamenGeneratorGUI extends JFrame {
     private JLabel cantidadTemasLabel;
     private JSpinner cantidadTemasSpinner;
     private JButton verExamenesButton;
-    private JButton generarButton;
+    private JButton generarPDFButton;
+    private JButton generarWordButton;
     private JTextArea resultadoTextArea;
     private JScrollPane scrollPane;
     
@@ -133,7 +134,7 @@ public class ExamenGeneratorGUI extends JFrame {
         verExamenesButton.setBorderPainted(false);
         verExamenesButton.setFocusPainted(false);
 
-        generarButton = new JButton("GENERAR EXÁMENES") {
+        generarPDFButton = new JButton("GENERAR EXÁMENES PDF") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -144,15 +145,36 @@ public class ExamenGeneratorGUI extends JFrame {
                 super.paintComponent(g);
             }
         };
-        generarButton.setForeground(Color.WHITE);
-        generarButton.setFont(new Font("Arial", Font.BOLD, 24));
-        generarButton.setMaximumSize(new Dimension(300, 40));
-        generarButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        generarButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        generarButton.setContentAreaFilled(false);
-        generarButton.setBorderPainted(false);
-        generarButton.setFocusPainted(false);
-        generarButton.putClientProperty("JButton.buttonType", "square");
+        generarPDFButton.setForeground(Color.WHITE);
+        generarPDFButton.setFont(new Font("Arial", Font.BOLD, 24));
+        generarPDFButton.setMaximumSize(new Dimension(300, 40));
+        generarPDFButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        generarPDFButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        generarPDFButton.setContentAreaFilled(false);
+        generarPDFButton.setBorderPainted(false);
+        generarPDFButton.setFocusPainted(false);
+        generarPDFButton.putClientProperty("JButton.buttonType", "square");
+        
+        generarWordButton = new JButton("GENERAR EXÁMENES WORD") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(0, 112, 192)); // Color azul para Word
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        generarWordButton.setForeground(Color.WHITE);
+        generarWordButton.setFont(new Font("Arial", Font.BOLD, 24));
+        generarWordButton.setMaximumSize(new Dimension(300, 40));
+        generarWordButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        generarWordButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        generarWordButton.setContentAreaFilled(false);
+        generarWordButton.setBorderPainted(false);
+        generarWordButton.setFocusPainted(false);
+        generarWordButton.putClientProperty("JButton.buttonType", "square");
         
         // Footer
         JLabel footerLabel = new JLabel("DESARROLLADO POR: III CICLO \"A\" 2024-I");
@@ -174,7 +196,9 @@ public class ExamenGeneratorGUI extends JFrame {
         leftPanel.add(Box.createRigidArea(new Dimension(0, 30)));
         leftPanel.add(verExamenesButton);
         leftPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        leftPanel.add(generarButton);
+        leftPanel.add(generarPDFButton);
+        leftPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        leftPanel.add(generarWordButton);
         leftPanel.add(Box.createRigidArea(new Dimension(0, 40)));
         leftPanel.add(footerLabel);
         leftPanel.add(Box.createVerticalGlue());
@@ -208,10 +232,17 @@ public class ExamenGeneratorGUI extends JFrame {
         add(mainPanel);
         
         // Configurar eventos
-        generarButton.addActionListener(new ActionListener() {
+        generarPDFButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                generarExamenes();
+                generarExamenes(true); // true para PDF
+            }
+        });
+        
+        generarWordButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generarExamenes(false); // false para Word
             }
         });
         
@@ -239,19 +270,20 @@ public class ExamenGeneratorGUI extends JFrame {
         });
     }
     
-    private void generarExamenes() {
+    private void generarExamenes(boolean isPDF) {
         // Obtener la cantidad de temas a generar
         int cantidadTemas = (Integer) cantidadTemasSpinner.getValue();
         
-        // Deshabilitar el botón mientras se generan los exámenes
-        generarButton.setEnabled(false);
+        // Deshabilitar los botones mientras se generan los exámenes
+        generarPDFButton.setEnabled(false);
+        generarWordButton.setEnabled(false);
         
         // Crear un hilo para no bloquear la interfaz durante la generación
         SwingWorker<String[], Void> worker = new SwingWorker<String[], Void>() {
             @Override
             protected String[] doInBackground() throws Exception {
-                // Generar los exámenes
-                return examenGenerator.generarExamenes(cantidadTemas);
+                // Generar los exámenes según el formato seleccionado
+                return examenGenerator.generarExamenes(cantidadTemas, isPDF);
             }
             
             @Override
@@ -279,8 +311,9 @@ public class ExamenGeneratorGUI extends JFrame {
                         "Error",
                         JOptionPane.ERROR_MESSAGE);
                 } finally {
-                    // Habilitar el botón nuevamente
-                    generarButton.setEnabled(true);
+                    // Habilitar los botones nuevamente
+                    generarPDFButton.setEnabled(true);
+                    generarWordButton.setEnabled(true);
                 }
             }
         };
