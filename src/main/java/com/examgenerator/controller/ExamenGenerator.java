@@ -2,8 +2,18 @@ package com.examgenerator.controller;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.List;
+
+import org.apache.poi.util.Units;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
+import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth;
 
 import com.examgenerator.model.Pregunta;
 import com.examgenerator.model.PreguntaDAO;
@@ -14,15 +24,8 @@ import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.ColumnText;
 import com.itextpdf.text.pdf.PdfWriter;
-
-// Imports para Word
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.apache.poi.xwpf.usermodel.XWPFRun;
-import org.apache.poi.util.Units;
-import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
-import java.io.FileInputStream;
 
 /**
  * Controlador para generar exámenes en formato PDF y Word
@@ -111,7 +114,7 @@ java.io.File examDirectory = new java.io.File("Exámenes");
     }
     
     /**
-     * Genera un archivo PDF con las preguntas del examen
+     * Genera un archivo PDF con las preguntas del examen en formato de dos columnas
      * @param preguntas Lista de preguntas para el examen
      * @param rutaArchivo Ruta donde se guardará el archivo PDF
      * @param tituloExamen Título del examen (Tema A, Tema B, etc.)
@@ -121,7 +124,7 @@ java.io.File examDirectory = new java.io.File("Exámenes");
         Document document = new Document();
         
         try {
-            PdfWriter.getInstance(document, new FileOutputStream(rutaArchivo));
+            PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(rutaArchivo));
             document.open();
             
             // Agregar portada
@@ -140,25 +143,162 @@ java.io.File examDirectory = new java.io.File("Exámenes");
             document.add(instrucciones);
             document.add(new Paragraph("\n"));
             
-            // Agregar preguntas
-            Font fontPregunta = FontFactory.getFont(FontFactory.HELVETICA, 11);
+            // Fuentes para preguntas y alternativas
+            Font fontPregunta = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
             Font fontAlternativa = FontFactory.getFont(FontFactory.HELVETICA, 10);
             
-            for (int i = 0; i < preguntas.size(); i++) {
-                Pregunta pregunta = preguntas.get(i);
+            // Configuración para dos columnas
+            float documentWidth = document.getPageSize().getWidth() - document.leftMargin() - document.rightMargin();
+            float columnWidth = (documentWidth - 20) / 2; // 20 es el espacio entre columnas
+            float leftColumnX = document.leftMargin();
+            float rightColumnX = leftColumnX + columnWidth + 20;
+            float yStart = writer.getVerticalPosition(true);
+            float yEnd = document.bottomMargin();
+            
+            // Índice de la pregunta actual
+            int currentQuestionIndex = 0;
+            int totalPreguntas = preguntas.size();
+            
+            // Procesar todas las páginas necesarias
+            while (currentQuestionIndex < totalPreguntas) {
+                // Crear ColumnText para ambas columnas en cada página
+                ColumnText leftColumn = new ColumnText(writer.getDirectContent());
+                ColumnText rightColumn = new ColumnText(writer.getDirectContent());
                 
-                // Número y enunciado de la pregunta
-                Paragraph parrafoPregunta = new Paragraph((i + 1) + ". " + pregunta.getEnunciado(), fontPregunta);
-                document.add(parrafoPregunta);
+                // Actualizar posición vertical para la nueva página
+                yStart = writer.getVerticalPosition(true);
                 
-                // Alternativas
-                document.add(new Paragraph("a) " + pregunta.getAlternativaA(), fontAlternativa));
-                document.add(new Paragraph("b) " + pregunta.getAlternativaB(), fontAlternativa));
-                document.add(new Paragraph("c) " + pregunta.getAlternativaC(), fontAlternativa));
-                document.add(new Paragraph("d) " + pregunta.getAlternativaD(), fontAlternativa));
-                document.add(new Paragraph("e) " + pregunta.getAlternativaE(), fontAlternativa));
+                // Configurar las columnas
+                leftColumn.setSimpleColumn(leftColumnX, yEnd, leftColumnX + columnWidth, yStart);
+                rightColumn.setSimpleColumn(rightColumnX, yEnd, rightColumnX + columnWidth, yStart);
                 
-                document.add(new Paragraph("\n"));
+                // Preparar preguntas para la columna izquierda
+                int leftColumnStartIndex = currentQuestionIndex;
+                int questionsPerColumn = (totalPreguntas - currentQuestionIndex + 1) / 2;
+                if (questionsPerColumn == 0) questionsPerColumn = 1;
+                
+                // Añadir preguntas a la columna izquierda
+                boolean leftColumnFull = false;
+                int leftColumnEndIndex = leftColumnStartIndex;
+                
+                for (int i = leftColumnStartIndex; i < leftColumnStartIndex + questionsPerColumn && i < totalPreguntas && !leftColumnFull; i++) {
+                    Pregunta pregunta = preguntas.get(i);
+                    
+                    // Crear contenido de la pregunta
+                    Paragraph contenidoPregunta = new Paragraph();
+                    
+                    // Número y enunciado de la pregunta
+                    contenidoPregunta.add(new Paragraph((i + 1) + ". " + pregunta.getEnunciado(), fontPregunta));
+                    
+                    // Alternativas
+                    contenidoPregunta.add(new Paragraph("a) " + pregunta.getAlternativaA(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("b) " + pregunta.getAlternativaB(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("c) " + pregunta.getAlternativaC(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("d) " + pregunta.getAlternativaD(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("e) " + pregunta.getAlternativaE(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("\n"));
+                    
+                    // Añadir la pregunta a la columna izquierda y verificar si cabe
+                    leftColumn.addElement(contenidoPregunta);
+                    int status = leftColumn.go(true); // Simulación para ver si cabe
+                    
+                    if (ColumnText.hasMoreText(status)) {
+                        // No cabe más contenido, la columna está llena
+                        leftColumnFull = true;
+                    } else {
+                        // La pregunta cabe, actualizamos el índice final
+                        leftColumnEndIndex = i + 1;
+                    }
+                }
+                
+                // Revertir la simulación y añadir el contenido real
+                leftColumn = new ColumnText(writer.getDirectContent());
+                leftColumn.setSimpleColumn(leftColumnX, yEnd, leftColumnX + columnWidth, yStart);
+                
+                for (int i = leftColumnStartIndex; i < leftColumnEndIndex; i++) {
+                    Pregunta pregunta = preguntas.get(i);
+                    
+                    Paragraph contenidoPregunta = new Paragraph();
+                    contenidoPregunta.add(new Paragraph((i + 1) + ". " + pregunta.getEnunciado(), fontPregunta));
+                    contenidoPregunta.add(new Paragraph("a) " + pregunta.getAlternativaA(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("b) " + pregunta.getAlternativaB(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("c) " + pregunta.getAlternativaC(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("d) " + pregunta.getAlternativaD(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("e) " + pregunta.getAlternativaE(), fontAlternativa));
+                    contenidoPregunta.add(new Paragraph("\n"));
+                    leftColumn.addElement(contenidoPregunta);
+                }
+                
+                // Renderizar la columna izquierda
+                leftColumn.go();
+                
+                // Actualizar el índice actual
+                currentQuestionIndex = leftColumnEndIndex;
+                
+                // Añadir preguntas a la columna derecha si quedan preguntas
+                if (currentQuestionIndex < totalPreguntas) {
+                    boolean rightColumnFull = false;
+                    int rightColumnEndIndex = currentQuestionIndex;
+                    
+                    for (int i = currentQuestionIndex; i < totalPreguntas && !rightColumnFull; i++) {
+                        Pregunta pregunta = preguntas.get(i);
+                        
+                        // Crear contenido de la pregunta
+                        Paragraph contenidoPregunta = new Paragraph();
+                        
+                        // Número y enunciado de la pregunta
+                        contenidoPregunta.add(new Paragraph((i + 1) + ". " + pregunta.getEnunciado(), fontPregunta));
+                        
+                        // Alternativas
+                        contenidoPregunta.add(new Paragraph("a) " + pregunta.getAlternativaA(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("b) " + pregunta.getAlternativaB(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("c) " + pregunta.getAlternativaC(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("d) " + pregunta.getAlternativaD(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("e) " + pregunta.getAlternativaE(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("\n"));
+                        
+                        // Añadir la pregunta a la columna derecha y verificar si cabe
+                        rightColumn.addElement(contenidoPregunta);
+                        int status = rightColumn.go(true); // Simulación para ver si cabe
+                        
+                        if (ColumnText.hasMoreText(status)) {
+                            // No cabe más contenido, la columna está llena
+                            rightColumnFull = true;
+                        } else {
+                            // La pregunta cabe, actualizamos el índice final
+                            rightColumnEndIndex = i + 1;
+                        }
+                    }
+                    
+                    // Revertir la simulación y añadir el contenido real
+                    rightColumn = new ColumnText(writer.getDirectContent());
+                    rightColumn.setSimpleColumn(rightColumnX, yEnd, rightColumnX + columnWidth, yStart);
+                    
+                    for (int i = currentQuestionIndex; i < rightColumnEndIndex; i++) {
+                        Pregunta pregunta = preguntas.get(i);
+                        
+                        Paragraph contenidoPregunta = new Paragraph();
+                        contenidoPregunta.add(new Paragraph((i + 1) + ". " + pregunta.getEnunciado(), fontPregunta));
+                        contenidoPregunta.add(new Paragraph("a) " + pregunta.getAlternativaA(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("b) " + pregunta.getAlternativaB(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("c) " + pregunta.getAlternativaC(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("d) " + pregunta.getAlternativaD(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("e) " + pregunta.getAlternativaE(), fontAlternativa));
+                        contenidoPregunta.add(new Paragraph("\n"));
+                        rightColumn.addElement(contenidoPregunta);
+                    }
+                    
+                    // Renderizar la columna derecha
+                    rightColumn.go();
+                    
+                    // Actualizar el índice actual
+                    currentQuestionIndex = rightColumnEndIndex;
+                }
+                
+                // Si aún quedan preguntas por procesar, crear una nueva página
+                if (currentQuestionIndex < totalPreguntas) {
+                    document.newPage();
+                }
             }
             
             document.close();
@@ -246,7 +386,7 @@ java.io.File examDirectory = new java.io.File("Exámenes");
     }
     
     /**
-     * Genera un archivo Word con las preguntas del examen
+     * Genera un archivo Word con las preguntas del examen en formato de dos columnas
      * @param preguntas Lista de preguntas para el examen
      * @param rutaArchivo Ruta donde se guardará el archivo Word
      * @param tituloExamen Título del examen (Tema A, Tema B, etc.)
@@ -270,50 +410,160 @@ java.io.File examDirectory = new java.io.File("Exámenes");
             
             // Agregar instrucciones
             XWPFParagraph instrucciones = document.createParagraph();
+            instrucciones.setAlignment(ParagraphAlignment.LEFT);
+            instrucciones.setSpacingAfter(0); // Eliminar espacio después de las instrucciones
             XWPFRun instruccionesRun = instrucciones.createRun();
             instruccionesRun.setText("Instrucciones: Marque la alternativa correcta para cada pregunta.");
             instruccionesRun.setItalic(true);
             instruccionesRun.setFontSize(10);
-            instruccionesRun.addBreak();
-            instruccionesRun.addBreak();
             
-            // Agregar preguntas
-            for (int i = 0; i < preguntas.size(); i++) {
-                Pregunta pregunta = preguntas.get(i);
+            // Índice de la pregunta actual
+            int currentQuestionIndex = 0;
+            int totalPreguntas = preguntas.size();
+            
+            // Procesar todas las páginas necesarias
+            while (currentQuestionIndex < totalPreguntas) {
+                // Crear tabla para dos columnas en cada página
+                XWPFTable table = document.createTable(1, 2);
+                table.getCTTbl().addNewTblPr().addNewTblW().setW(BigInteger.valueOf(9500));
+                table.getCTTbl().getTblPr().getTblW().setType(STTblWidth.DXA);
                 
-                // Número y enunciado de la pregunta
-                XWPFParagraph parrafoPregunta = document.createParagraph();
-                XWPFRun preguntaRun = parrafoPregunta.createRun();
-                preguntaRun.setText((i + 1) + ". " + pregunta.getEnunciado());
-                preguntaRun.setFontSize(11);
-                preguntaRun.addBreak();
+                // Quitar bordes de la tabla
+                table.getCTTbl().getTblPr().unsetTblBorders();
                 
-                // Alternativas
-                XWPFParagraph alternativaA = document.createParagraph();
-                XWPFRun alternativaARun = alternativaA.createRun();
-                alternativaARun.setText("a) " + pregunta.getAlternativaA());
-                alternativaARun.setFontSize(10);
+                // Obtener celdas para las columnas
+                XWPFTableCell leftCell = table.getRow(0).getCell(0);
+                XWPFTableCell rightCell = table.getRow(0).getCell(1);
                 
-                XWPFParagraph alternativaB = document.createParagraph();
-                XWPFRun alternativaBRun = alternativaB.createRun();
-                alternativaBRun.setText("b) " + pregunta.getAlternativaB());
-                alternativaBRun.setFontSize(10);
+                // Establecer ancho de columnas
+                leftCell.getCTTc().addNewTcPr().addNewTcW().setW(BigInteger.valueOf(4750));
+                rightCell.getCTTc().addNewTcPr().addNewTcW().setW(BigInteger.valueOf(4750));
                 
-                XWPFParagraph alternativaC = document.createParagraph();
-                XWPFRun alternativaCRun = alternativaC.createRun();
-                alternativaCRun.setText("c) " + pregunta.getAlternativaC());
-                alternativaCRun.setFontSize(10);
+                // Calcular cuántas preguntas van en cada columna para esta página
+                int preguntasRestantes = totalPreguntas - currentQuestionIndex;
+                int preguntasPorColumna = (preguntasRestantes + 1) / 2; // Redondeo hacia arriba
                 
-                XWPFParagraph alternativaD = document.createParagraph();
-                XWPFRun alternativaDRun = alternativaD.createRun();
-                alternativaDRun.setText("d) " + pregunta.getAlternativaD());
-                alternativaDRun.setFontSize(10);
+                // Estimación de cuántas preguntas caben en una columna (ajustado para mejor visualización)
+                int maxPreguntasPorColumna = 4; // Ajustado para equilibrar con el PDF
+                if (preguntasPorColumna > maxPreguntasPorColumna) {
+                    preguntasPorColumna = maxPreguntasPorColumna;
+                }
                 
-                XWPFParagraph alternativaE = document.createParagraph();
-                XWPFRun alternativaERun = alternativaE.createRun();
-                alternativaERun.setText("e) " + pregunta.getAlternativaE());
-                alternativaERun.setFontSize(10);
-                alternativaERun.addBreak();
+                // Primera columna (izquierda)
+                int leftColumnEndIndex = Math.min(currentQuestionIndex + preguntasPorColumna, totalPreguntas);
+                
+                for (int i = currentQuestionIndex; i < leftColumnEndIndex; i++) {
+                    Pregunta pregunta = preguntas.get(i);
+                    
+                    // Número y enunciado de la pregunta
+                    XWPFParagraph parrafoPregunta = leftCell.addParagraph();
+                    parrafoPregunta.setSpacingAfter(0);
+                    XWPFRun preguntaRun = parrafoPregunta.createRun();
+                    preguntaRun.setText((i + 1) + ". " + pregunta.getEnunciado());
+                    preguntaRun.setBold(true);
+                    preguntaRun.setFontSize(11);
+                    
+                    // Alternativas con mejor espaciado
+                    XWPFParagraph alternativaA = leftCell.addParagraph();
+                    alternativaA.setIndentationLeft(200);
+                    alternativaA.setSpacingAfter(0);
+                    XWPFRun alternativaARun = alternativaA.createRun();
+                    alternativaARun.setText("a) " + pregunta.getAlternativaA());
+                    alternativaARun.setFontSize(10);
+                    
+                    XWPFParagraph alternativaB = leftCell.addParagraph();
+                    alternativaB.setIndentationLeft(200);
+                    alternativaB.setSpacingAfter(0);
+                    XWPFRun alternativaBRun = alternativaB.createRun();
+                    alternativaBRun.setText("b) " + pregunta.getAlternativaB());
+                    alternativaBRun.setFontSize(10);
+                    
+                    XWPFParagraph alternativaC = leftCell.addParagraph();
+                    alternativaC.setIndentationLeft(200);
+                    alternativaC.setSpacingAfter(0);
+                    XWPFRun alternativaCRun = alternativaC.createRun();
+                    alternativaCRun.setText("c) " + pregunta.getAlternativaC());
+                    alternativaCRun.setFontSize(10);
+                    
+                    XWPFParagraph alternativaD = leftCell.addParagraph();
+                    alternativaD.setIndentationLeft(200);
+                    alternativaD.setSpacingAfter(0);
+                    XWPFRun alternativaDRun = alternativaD.createRun();
+                    alternativaDRun.setText("d) " + pregunta.getAlternativaD());
+                    alternativaDRun.setFontSize(10);
+                    
+                    XWPFParagraph alternativaE = leftCell.addParagraph();
+                    alternativaE.setIndentationLeft(200);
+                    alternativaE.setSpacingAfter(0);
+                    XWPFRun alternativaERun = alternativaE.createRun();
+                    alternativaERun.setText("e) " + pregunta.getAlternativaE());
+                    alternativaERun.setFontSize(10);
+                }
+                
+                // Actualizar el índice de la pregunta actual
+                currentQuestionIndex = leftColumnEndIndex;
+                
+                // Segunda columna (derecha) si quedan preguntas
+                if (currentQuestionIndex < totalPreguntas) {
+                    int rightColumnEndIndex = Math.min(currentQuestionIndex + preguntasPorColumna, totalPreguntas);
+                    
+                    for (int i = currentQuestionIndex; i < rightColumnEndIndex; i++) {
+                        Pregunta pregunta = preguntas.get(i);
+                        
+                        // Número y enunciado de la pregunta
+                        XWPFParagraph parrafoPregunta = rightCell.addParagraph();
+                        parrafoPregunta.setSpacingAfter(0);
+                        XWPFRun preguntaRun = parrafoPregunta.createRun();
+                        preguntaRun.setText((i + 1) + ". " + pregunta.getEnunciado());
+                        preguntaRun.setBold(true);
+                        preguntaRun.setFontSize(11);
+                        
+                        // Alternativas con mejor espaciado
+                        XWPFParagraph alternativaA = rightCell.addParagraph();
+                        alternativaA.setIndentationLeft(200);
+                        alternativaA.setSpacingAfter(0);
+                        XWPFRun alternativaARun = alternativaA.createRun();
+                        alternativaARun.setText("a) " + pregunta.getAlternativaA());
+                        alternativaARun.setFontSize(10);
+                        
+                        XWPFParagraph alternativaB = rightCell.addParagraph();
+                        alternativaB.setIndentationLeft(200);
+                        alternativaB.setSpacingAfter(0);
+                        XWPFRun alternativaBRun = alternativaB.createRun();
+                        alternativaBRun.setText("b) " + pregunta.getAlternativaB());
+                        alternativaBRun.setFontSize(10);
+                        
+                        XWPFParagraph alternativaC = rightCell.addParagraph();
+                        alternativaC.setIndentationLeft(200);
+                        alternativaC.setSpacingAfter(0);
+                        XWPFRun alternativaCRun = alternativaC.createRun();
+                        alternativaCRun.setText("c) " + pregunta.getAlternativaC());
+                        alternativaCRun.setFontSize(10);
+                        
+                        XWPFParagraph alternativaD = rightCell.addParagraph();
+                        alternativaD.setIndentationLeft(200);
+                        alternativaD.setSpacingAfter(0);
+                        XWPFRun alternativaDRun = alternativaD.createRun();
+                        alternativaDRun.setText("d) " + pregunta.getAlternativaD());
+                        alternativaDRun.setFontSize(10);
+                        
+                        XWPFParagraph alternativaE = rightCell.addParagraph();
+                        alternativaE.setIndentationLeft(200);
+                        alternativaE.setSpacingAfter(0);
+                        XWPFRun alternativaERun = alternativaE.createRun();
+                        alternativaERun.setText("e) " + pregunta.getAlternativaE());
+                        alternativaERun.setFontSize(10);
+                    }
+                    
+                    // Actualizar el índice de la pregunta actual
+                    currentQuestionIndex = rightColumnEndIndex;
+                }
+                
+                // Agregar salto de página solo si quedan más preguntas
+                if (currentQuestionIndex < totalPreguntas) {
+                    XWPFParagraph pageBreak = document.createParagraph();
+                    pageBreak.createRun().addBreak(org.apache.poi.xwpf.usermodel.BreakType.PAGE);
+                }
             }
             
             // Guardar el documento
@@ -325,9 +575,10 @@ java.io.File examDirectory = new java.io.File("Exámenes");
             
         } catch (Exception e) {
             System.err.println("Error al generar el Word: " + e.getMessage());
+            e.printStackTrace(); // Añadir stack trace para mejor diagnóstico
             try {
                 document.close();
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 // Ignorar
             }
             return false;
